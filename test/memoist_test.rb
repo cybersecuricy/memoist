@@ -149,6 +149,40 @@ class MemoistTest < Minitest::Test
     end
   end
 
+  class OperatorMethods
+    extend Memoist
+
+    OPERATORS = %w{
+      [] []=
+      **
+      ! ~ +@ -@
+      * / %
+      + -
+      >> <<
+      &
+      ^ |
+      <= < > >=
+      <=>
+      == === =~
+    }.freeze
+
+    attr_reader :counter
+
+    def initialize
+      @counter = CallCounter.new
+    end
+
+    OPERATORS.each do |operator|
+      class_eval(<<-EOS, __FILE__, __LINE__ + 1)
+        def #{operator}(other)
+          @counter.call(#{operator.inspect})
+          'foo'
+        end
+        memoize :#{operator}
+      EOS
+    end
+  end
+
   module Rates
     extend Memoist
     include Countable
@@ -612,5 +646,17 @@ class MemoistTest < Minitest::Test
     end
 
     assert_equal 1, person.calls(:kwargs)
+  end
+
+  def test_operator_method_names
+    operator_methods = OperatorMethods.new
+
+    OperatorMethods::OPERATORS.each do |operator|
+      3.times { operator_methods.send(operator, 'bar') }
+
+      assert_equal 1, operator_methods.counter.count(operator)
+      assert_equal 'foo', operator_methods.send(operator, 'bar', :reload)
+      assert_equal 2, operator_methods.counter.count(operator)
+    end
   end
 end
