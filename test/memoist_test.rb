@@ -151,6 +151,7 @@ class MemoistTest < Minitest::Test
 
   class OperatorMethods
     extend Memoist
+    include Countable
 
     OPERATORS = %w{
       [] []=
@@ -166,16 +167,10 @@ class MemoistTest < Minitest::Test
       == === =~
     }.freeze
 
-    attr_reader :counter
-
-    def initialize
-      @counter = CallCounter.new
-    end
-
     OPERATORS.each do |operator|
       class_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{operator}(other)
-          @counter.call(#{operator.inspect})
+          counter.call(#{operator.inspect})
           'foo'
         end
         memoize :#{operator}
@@ -654,9 +649,9 @@ class MemoistTest < Minitest::Test
     OperatorMethods::OPERATORS.each do |operator|
       3.times { operator_methods.send(operator, 'bar') }
 
-      assert_equal 1, operator_methods.counter.count(operator)
+      assert_equal 1, operator_methods.calls(operator)
       assert_equal 'foo', operator_methods.send(operator, 'bar', :reload)
-      assert_equal 2, operator_methods.counter.count(operator)
+      assert_equal 2, operator_methods.calls(operator)
     end
   end
 end
