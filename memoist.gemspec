@@ -41,6 +41,8 @@ Gem::Specification.new do |spec|
 
   if RUBY_VERSION < '1.9.3'
     spec.add_development_dependency 'rake', '~> 10.4'
+  elsif RUBY_VERSION < '3.0.0'
+    spec.add_dependency 'ruby2_keywords'
   else
     spec.add_development_dependency 'rake'
   end
